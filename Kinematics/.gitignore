@@ -1,0 +1,9 @@
+## http://stackoverflow.com/questions/3922660/which-visual-c-file-types-should-be-committed-to-version-control
+
+*.aps
+*.sdf
+*.sln.docstates
+*.suo
+/Debug
+/Release
+/ipch
