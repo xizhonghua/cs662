@@ -859,6 +859,8 @@ Quaternion Quaternion::Slerp(float t, const Quaternion& q0, const Quaternion& q1
 	auto theta = acos(dot);
 	auto q = (sin((1 - t)*theta)  * q0 + sin(t*theta) * q1 ) / sin(theta);
 
+	//q.Normalize();
+
 	return q;
 }
 

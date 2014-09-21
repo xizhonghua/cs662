@@ -516,29 +516,53 @@ void Skeleton::SolveIKCCD()
     if (m_ikChain.size() > 0) // If there is at east some Joints in the IK chain for manipulation
     {
         Joint* pEndEffector = m_joints[m_selectedJoint]; // Get the end-effector
-        vec3 dist = m_goalPosition - pEndEffector->GetGlobalTranslation(); // Compute distance error
+        vec3 dist = m_goalPosition - pEndEffector->GetGlobalTranslation(); // Compute distance error		
         if (dist.Length() > EPSILONDIST) // There is need for CCD
         {
             // You might want to do some preprocessing here
 
+			vector<float> weights(m_ikChain.size());
+
+			for (unsigned int i = 0, chainSize = m_ikChain.size(); i < chainSize; ++i)
+				weights[i] = 0.1f + (1.0f - float(i) / float(chainSize)) * 0.2f;
+
             for (unsigned int i = 0; i < MAX_ITER; i++)
             {
-                Joint* pJoint;
-                for (vector<Joint*>::const_iterator iter = m_ikChain.begin(); iter != m_ikChain.end(); ++iter)
+				int joint_index = -1;
+				for (auto pJoint : m_ikChain)
                 {
-                    // Let pJoint be the current Joint on the IK chain for handling
-                    pJoint = *iter;
+					// Let pJoint be the current Joint on the IK chain for handling                    
+					++joint_index;                    
 
                     // Compute the rotation axis and angle to minimize the error
                     // You need to handle the co-linear case to avoid invalid vec3 cross product
                     // Add your code here
 
+					auto vc = (pEndEffector->GetGlobalTranslation() - pJoint->GetGlobalTranslation()).Normalize();
+					auto vg = (m_goalPosition - pJoint->GetGlobalTranslation()).Normalize();
+					auto rr = pJoint->GetGlobalRotation().Transpose();
+					auto dot = vc * vg;
+					auto colinear = fabs(fabs(dot) - 1) < EPSILON*10;
+
+					if (colinear) continue;
+
+					auto axis = rr * vc.Cross(vg);
+					auto angle = acos(dot) * weights[joint_index];
+
                     // Update rotation at pJoint
                     // Update FK from pJoint
                     // Add your code
+					mat3 new_local_rotation = mat3::Identity();
+
+					if (angle > 10 * EPSILON)					
+						new_local_rotation = mat3::Rotation3DRad(axis, angle);
+
+					pJoint->SetLocalRotation(new_local_rotation * pJoint->GetLocalRotation());
+					pJoint->UpdateTransformation(true);
 
                     // Check error, if it is close enough, terminate the CCD iteration
                     dist = m_goalPosition - pEndEffector->GetGlobalTranslation();
+					
                     if (dist.Length() < EPSILONDIST)
                         return;
                 }
@@ -773,7 +797,7 @@ void Frame::Squad(const Frame& frame0, const Frame& s0,const Frame& s1, const Fr
 		const auto& q1 = frame1.m_quaternionData[i];
 		const auto& a0 = s0.m_quaternionData[i];
 		const auto& a1 = s1.m_quaternionData[i];
-		auto q = Quaternion::Squad(fPerc, q0, a0, a1, q1);
+		auto q = Quaternion::Squad(fPerc, q0, a0, a1, q1);		
 
 		targetFrame.SetJointRotation(i, q);
 	}
