@@ -121,11 +121,12 @@ public:
 	void SetSelectedJoint(const int& selectedJoint);
 	void SolveIKCCD();
 	void SolveIKJacobianPseudoInverse();
-	void SolveIKJacobianTranspose();
+	void SolveIKJacobianTranspose();    
 
 	friend Player;
 
 private:
+    void SolveIKJacobian(bool bPseudoInverse);
 	bool LoadFromFileRec(ifstream& inFile, Joint* pParent, string prefix);
 	void SaveToFileRec(ofstream& outFile, Joint* pJoint, unsigned int level);
 	void ReadFromFrameRec(Joint* pJoint, mat3* pRotationData);

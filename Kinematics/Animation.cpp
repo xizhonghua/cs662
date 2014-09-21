@@ -8,6 +8,12 @@
 #include "StdAfx.h"  // Only needed in MFC
 
 #include "Animation.h"
+#include "pinv.h"
+#include <Eigen/LU>
+using Eigen::MatrixXd;
+using Eigen::Matrix4d;
+using Eigen::Vector4d;
+
 
 //////////////////////////////////////////////////////////////////////////
 //
@@ -552,7 +558,7 @@ void Skeleton::SolveIKCCD()
                     // Update rotation at pJoint
                     // Update FK from pJoint
                     // Add your code
-					mat3 new_local_rotation = mat3::Identity();
+					auto new_local_rotation = mat3::Identity();
 
 					if (angle > 10 * EPSILON)					
 						new_local_rotation = mat3::Rotation3DRad(axis, angle);
@@ -571,14 +577,148 @@ void Skeleton::SolveIKCCD()
     }
 } 
 
+void Skeleton::SolveIKJacobian(bool bPseudoInverse)
+{
+    // Add your code here
+
+    // If there is at east some Joints in the IK chain for manipulation
+    if (m_ikChain.size() <= 0) return;
+
+    auto pEndEffector = m_joints[m_selectedJoint]; // Get the end-effector
+    auto dist = m_goalPosition - pEndEffector->GetGlobalTranslation(); // Compute distance error		
+    if (dist.Length() <= EPSILONDIST) return; // There is need for IK
+
+    // You might want to do some preprocessing here
+
+    const auto chainSize = m_ikChain.size();
+
+    auto thetas = vector<vec3>(chainSize);
+
+    auto J = Eigen::MatrixXd(3, 3 * chainSize);
+
+    const auto h = 0.01f;
+
+    // init rotation parameters
+    for (unsigned int i = 0; i < chainSize; i++)
+    {
+        auto joint = m_ikChain[i];
+        auto axis = vec3();
+        auto angle = 0.f;
+        joint->GetLocalRotation().ToQuaternion().ToAxisAngle(axis, angle);
+        thetas[i] = axis * angle;
+    }
+
+    for (unsigned int i = 0; i < MAX_ITER; i++)
+    {
+        int joint_index = -1;
+
+        auto p = pEndEffector->GetGlobalTranslation();
+
+        for (auto pJoint : m_ikChain)
+        {
+            // Let pJoint be the current Joint on the IK chain for handling                    
+            ++joint_index;
+
+            auto org_rot = pJoint->GetLocalRotation();
+
+            // 3 components
+            for (int j = 0; j < 3; j++)
+            {
+                // get the rotation parameter theta
+                auto theta = vec3(thetas[joint_index]);
+
+                // update the rotation parameter
+                theta[j] += h;
+
+                auto angle = theta.Length();
+
+                if (angle < EPSILON) continue;
+
+                auto axis = vec3(theta).Normalize();
+
+                auto q = Quaternion();
+
+                q.FromAxisAngle(axis, angle);
+
+                auto new_rot = q.ToRotation();
+
+                // update the rotation angle
+                pJoint->SetLocalRotation(new_rot);
+                pJoint->UpdateTransformation(true);
+                // new postition of the end effector
+                auto pp = pEndEffector->GetGlobalTranslation();
+
+                // partial derivative
+                auto pet = (p - pp) / h;
+
+                // update the jacobian matrix
+                J.col(joint_index*3 + j) << pet[0], pet[1], pet[2];
+
+                // roll back
+                pJoint->SetLocalRotation(org_rot);
+                pJoint->UpdateTransformation(true);
+            }
+        }
+
+        auto e = m_goalPosition - pEndEffector->GetGlobalTranslation();
+        auto E = Eigen::MatrixXd(3, 1);
+        E << e[0], e[1], e[2];
+
+        auto JP = bPseudoInverse ? pinv(J) : J.transpose();
+
+        // Nx1 = Nx3 * 3x1        
+        MatrixXd delta_thetas = JP * E;
+        auto rows = delta_thetas.rows();
+        auto cols = delta_thetas.cols();
+        auto const alpha = 0.01f;
+
+        // update the rotation paramters and rotation matrices
+        for (unsigned int i = 0; i < chainSize; i++)
+        {
+            auto pJoint = m_ikChain[i];
+            auto& theta = thetas[i];
+
+            for (int j = 0; j < 3; j++)
+            {
+                auto delta_theta = delta_thetas(i * 3 + j, 0);
+                theta[j] += alpha*delta_theta;
+            }
+
+            auto angle = theta.Length();
+
+            if (angle < EPSILON) continue;
+
+            auto axis = vec3(theta).Normalize();
+
+            auto q = Quaternion();
+
+            q.FromAxisAngle(axis, angle);
+
+            auto new_rot = q.ToRotation();
+
+            // update the rotation angle
+            pJoint->SetLocalRotation(new_rot);
+            pJoint->UpdateTransformation(true);
+        }
+
+
+
+        // Check error, if it is close enough, terminate the CCD iteration
+        e = m_goalPosition - pEndEffector->GetGlobalTranslation();
+        if (e.Length() < EPSILONDIST)
+            return;
+    }
+}
+
 void Skeleton::SolveIKJacobianPseudoInverse()
 {
 	// Add your code here
+    this->SolveIKJacobian(true);
 }
 
 void Skeleton::SolveIKJacobianTranspose()
 {
-	// Add your code here
+    this->SolveIKJacobian(false);
 }
 
 
