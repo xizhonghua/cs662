@@ -855,10 +855,9 @@ void Quaternion::Zero()
 Quaternion Quaternion::Slerp(float t, const Quaternion& q0, const Quaternion& q1)
 {
 	// YOUR CODE HERE
-	auto dot = Quaternion::Dot(q0, q1);
-	const auto q0p = dot >= 0 ? q0 : -q0;
-	auto theta = acos(fabs(dot));
-	auto q = (sin((1 - t)*theta)  * q0p + sin(t*theta) * q1 ) / sin(theta);
+	auto dot = Quaternion::Dot(q0, q1);	
+	auto theta = acos(dot);
+	auto q = (sin((1 - t)*theta)  * q0 + sin(t*theta) * q1 ) / sin(theta);
 
 	return q;
 }
@@ -873,7 +872,11 @@ Quaternion Quaternion::Intermediate (const Quaternion& q0, const Quaternion& q1,
 
 	Quaternion q;
 
-	q = q1 * Quaternion::Exp((Quaternion::Log(q1.Inverse()*q2) + Quaternion::Log(q1.Inverse()*q0)) / 4);
+	auto tq0 = (q1.Inverse()*q0);
+	auto tq2 = (q1.Inverse()*q2);
+	
+
+	q = q1 * Quaternion::Exp((Quaternion::Log(tq0) + Quaternion::Log(tq2)) / -4.0);
 
 	return q;
 }

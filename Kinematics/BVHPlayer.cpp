@@ -88,7 +88,7 @@ BOOL CBVHPlayerApp::InitInstance()
 	// The one and only window has been initialized, so show and update it.
 	m_pMainWnd->ShowWindow(SW_SHOW);
 	m_pMainWnd->UpdateWindow();
-	m_pMainWnd->SetWindowText("BVHPlayer 2.0");
+	m_pMainWnd->SetWindowText("BVHPlayer 2.0 - Zhonghua Xi");
 	return TRUE;
 }
 

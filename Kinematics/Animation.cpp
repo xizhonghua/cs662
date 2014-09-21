@@ -714,11 +714,18 @@ void Frame::Cubic(const Frame& frame0, const Frame& frame1, const Frame& frame2,
 void Frame::Slerp(const Frame& frame0, const Frame& frame1, Frame& targetFrame, float fPerc)
 {
 	// Replace the following code with your code
-	targetFrame.m_rootTranslation = vec3(0.0f, 0.0f, 0.0f); // You need to implement the root translation interpolation
+	// You need to implement the root translation interpolation
+
+	targetFrame.m_rootTranslation = frame0.m_rootTranslation * (1.0f - fPerc) + frame1.m_rootTranslation * fPerc;
 	for (unsigned int i = 0; i < frame0.m_jointCount; i++)
 	{
 		// Slerp the joint rotations
 		// Make sure of the data consistency
+		const auto& q0 = frame0.m_quaternionData[i];
+		const auto& q1 = frame1.m_quaternionData[i];
+		auto q = Quaternion::Slerp(fPerc, q0, q1);
+
+		targetFrame.SetJointRotation(i, q);		
 	}
 }
 
@@ -729,6 +736,17 @@ void Frame::Slerp(const Frame& frame0, const Frame& frame1, Frame& targetFrame, 
 void Frame::IntermediateFrame(const Frame& frame0, const Frame& frame1, const Frame& frame2, Frame& targetFrame)
 {
 	// Add your code here
+	for (unsigned int i = 0; i < frame0.m_jointCount; i++)
+	{
+		// Slerp the joint rotations
+		// Make sure of the data consistency
+		const auto& q0 = frame0.m_quaternionData[i];
+		const auto& q1 = frame1.m_quaternionData[i];
+		const auto& q2 = frame2.m_quaternionData[i];
+
+		auto q = Quaternion::Intermediate(q0, q1, q2);
+		targetFrame.SetJointRotation(i, q);
+	}
 }
 
 
@@ -745,6 +763,20 @@ void Frame::Squad(const Frame& frame0, const Frame& s0,const Frame& s1, const Fr
 				  Frame& targetFrame, float fPerc)
 {
 	// Add your code here
+
+	targetFrame.m_rootTranslation = frame0.m_rootTranslation * (1.0f - fPerc) + frame1.m_rootTranslation * fPerc;
+	for (unsigned int i = 0; i < frame0.m_jointCount; i++)
+	{
+		// Slerp the joint rotations
+		// Make sure of the data consistency
+		const auto& q0 = frame0.m_quaternionData[i];
+		const auto& q1 = frame1.m_quaternionData[i];
+		const auto& a0 = s0.m_quaternionData[i];
+		const auto& a1 = s1.m_quaternionData[i];
+		auto q = Quaternion::Squad(fPerc, q0, a0, a1, q1);
+
+		targetFrame.SetJointRotation(i, q);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
