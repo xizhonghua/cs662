@@ -1108,6 +1108,7 @@ Player::Player()
 {
 	m_currentMotion = &m_motion1;
 	m_motionIndex = eMotion1;
+    m_IKType = eCCD;
 }
 
 Player::~Player()
