@@ -856,10 +856,13 @@ Quaternion Quaternion::Slerp(float t, const Quaternion& q0, const Quaternion& q1
 {
 	// YOUR CODE HERE
 	auto dot = Quaternion::Dot(q0, q1);	
+
+    if (fabs(fabs(dot) - 1) < EPSILON) return (q0*1 + q1*1) / 2;
+
 	auto theta = acos(dot);
 	auto q = (sin((1 - t)*theta)  * q0 + sin(t*theta) * q1 ) / sin(theta);
 
-	//q.Normalize();
+    q = q.Normalize();
 
 	return q;
 }
@@ -893,9 +896,10 @@ Quaternion Quaternion::Squad(float t, const Quaternion& q0, const Quaternion& a,
 {
 	// your code here
 
-	Quaternion q;
+    auto q01 = Quaternion::Slerp(t, q0, q1);
+    auto qab = Quaternion::Slerp(t, a, b);
 
-	q = Quaternion::Slerp(2 * t*(1 - t), Quaternion::Slerp(t, q0, q1), Quaternion::Slerp(t, a, b));
+    auto q = Quaternion::Slerp(2 * t*(1 - t), q01, qab);    
 
 	return q;
 }
