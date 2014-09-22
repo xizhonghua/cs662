@@ -656,7 +656,7 @@ void Skeleton::SolveIKJacobian(bool bPseudoInverse)
                 auto pp = pEndEffector->GetGlobalTranslation();
 
                 // partial derivative
-                auto pet = (p - pp) / h;
+                auto pet = (pp - p) / h;
 
                 // update the jacobian matrix
                 J(0, joint_index * 3 + j) = pet[0];
@@ -669,7 +669,7 @@ void Skeleton::SolveIKJacobian(bool bPseudoInverse)
             }
         }
 
-        const auto e = p - m_goalPosition;
+        const auto e = m_goalPosition - p;
         auto E = Eigen::Vector3d(e[0],e[1],e[2]);        
 
         MatrixXd JP = bPseudoInverse ? pinv(J) : J.transpose();               
