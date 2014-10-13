@@ -532,7 +532,7 @@ void Skeleton::SolveIKCCD()
 			for (unsigned int i = 0, chainSize = m_ikChain.size(); i < chainSize; ++i)
 				weights[i] = 0.1f + (1.0f - float(i) / float(chainSize)) * 0.2f;
 
-            for (unsigned int i = 0; i < MAX_ITER; i++)
+            for (unsigned int i = 0; i < 10*MAX_ITER; i++)
             {
 				int joint_index = -1;
 				for (auto pJoint : m_ikChain)
