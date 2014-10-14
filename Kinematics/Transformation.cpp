@@ -857,10 +857,19 @@ Quaternion Quaternion::Slerp(float t, const Quaternion& q0, const Quaternion& q1
 	// YOUR CODE HERE
 	auto dot = Quaternion::Dot(q0, q1);	
 
-    if (fabs(fabs(dot) - 1) < EPSILON) return (q0*1 + q1*1) / 2;
+    auto q0_prime = q0;
+
+    if (dot < 0) q0_prime = -q0_prime;
+
+    dot = fabs(dot);
+
+    if (fabs(dot - 1) < EPSILON) {
+        auto q = (q0_prime * 1 + q1 * 1) / 2;
+        return q.Normalize();
+    }
 
 	auto theta = acos(dot);
-	auto q = (sin((1 - t)*theta)  * q0 + sin(t*theta) * q1 ) / sin(theta);
+    auto q = (sin((1 - t)*theta)  * q0_prime + sin(t*theta) * q1) / sin(theta);
 
     q = q.Normalize();
 
