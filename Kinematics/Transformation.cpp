@@ -877,11 +877,13 @@ Quaternion Quaternion::Intermediate (const Quaternion& q0, const Quaternion& q1,
 
 	Quaternion q;
 
-	auto tq0 = (q1.Inverse()*q0);
-	auto tq2 = (q1.Inverse()*q2);
+	auto tq0 = (q1.Inverse()*q0).Normalize();
+    auto tq2 = (q1.Inverse()*q2).Normalize();
 	
 
 	q = q1 * Quaternion::Exp((Quaternion::Log(tq0) + Quaternion::Log(tq2)) / -4.0);
+
+    q = q.Normalize();
 
 	return q;
 }

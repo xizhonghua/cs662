@@ -1251,6 +1251,10 @@ void Player::Blend( const unsigned int& startFrame, const unsigned int& endFrame
 	s1.SetJointCount(m_motion3.m_jointCount);
 	for (i = startFrame + 1, j = 0; i < startFrame + interpFrame + 1; i++, j++)
 	{
+        if (i == 141)
+        {
+            cout << "i = " << i << endl;
+        }
 		fPerc = float(j + 1) / float(interpFrame + 1);
 		pFrame = m_motion3.GetFrameAt(i);
 		switch(type){
